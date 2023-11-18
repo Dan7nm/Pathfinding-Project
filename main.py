@@ -43,6 +43,9 @@ def main():
 
         # Loop checks for every event happening on the screen
         for event in pygame.event.get():
+            # convert mouse position to grid position
+            grid_pos= cvt_coord(pygame.mouse.get_pos())
+
             # If the window was closed quit the app 
             if event.type==pygame.QUIT:
                 running = False
@@ -50,20 +53,20 @@ def main():
             elif event.type==pygame.MOUSEBUTTONDOWN:
                 # Check if start,point was chosen else draw a white square
                 if not starting_point_chosen:
-                    starting_pos = pygame.mouse.get_pos()
+                    starting_pos = grid_pos
                     draw_square(starting_pos,screen,GREEN)
                     starting_point_chosen = True
                 elif not ending_point_chosen:
-                    ending_pos = pygame.mouse.get_pos()
+                    ending_pos = grid_pos
                     draw_square(ending_pos,screen,RED)
                     ending_point_chosen = True
                 elif pygame.mouse.get_pos():
-                    draw_square(pygame.mouse.get_pos(),screen,WHITE)
+                    draw_square(grid_pos,screen,WHITE)
                     mouse_clicked = True
-                    grid = update_grid(True,pygame.mouse.get_pos(),grid)
+                    grid = update_grid(True,grid_pos,grid)
             elif event.type==pygame.MOUSEMOTION and mouse_clicked==True:
-                draw_square(pygame.mouse.get_pos(),screen,WHITE)
-                grid = update_grid(True,pygame.mouse.get_pos(),grid)
+                draw_square(grid_pos,screen,WHITE)
+                grid = update_grid(True,grid_pos,grid)
             elif event.type==pygame.MOUSEBUTTONUP:
                 mouse_clicked=False
             elif event.type==pygame.KEYDOWN:
@@ -79,9 +82,6 @@ def main():
 
         # Draw the grid
         draw_grid(screen)
-
-        # Update the screen with the drawn objects
-        # pygame.display.update()
 
     # Quit the app
     pygame.quit()
@@ -99,19 +99,15 @@ def draw_grid(screen):
 # Draw a square when mouse was clicked
 def draw_square(pos,screen,color):
     mouse_x,mouse_y=pos
-    mouse_x //= BLOCK_SIZE
-    mouse_y //= BLOCK_SIZE
     rect = pygame.Rect(mouse_x*BLOCK_SIZE,mouse_y*BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE)
     pygame.draw.rect(screen,color,rect)
     pygame.display.update()
 
 
 # Initialize the grid for the algorithm
-# start - means the square is the starting point
-# end - this square is the goal 
-# empty - empty square and allowed to travel
-# obstacle - means you can travel through this square
 # we will initialize the grid to false everything
+# False means there is no obstacle or the algorithm has no visited there yet
+# Starting point will also be True
 def init_grid():
     grid = []
     for x in range(0,WIDTH,BLOCK_SIZE):
@@ -121,39 +117,34 @@ def init_grid():
         grid.append(row)
     return grid
 
-# Print the grid 
-def print_grid(grid):
-    for row in grid:
-        row_string = ''
-        for element in row:
-            row_string+=' '+element+' '
-        print(row_string)
-
 # Updates the grid with the user actions
 def update_grid(action,pos,grid):
-    x_pos = pos[0]//BLOCK_SIZE
-    y_pos = pos[1]//BLOCK_SIZE
+    x_pos,y_pos = pos
     grid[y_pos][x_pos] = action
     return grid
+
+# Converts mouse coordinates to grid coordinates 
+# Meaning we will know which square on the grid mouse touches
+def cvt_coord(mouse_pos):
+    grid_x,grid_y=mouse_pos
+    grid_x//=BLOCK_SIZE
+    grid_y//=BLOCK_SIZE
+    return (grid_x,grid_y)
 
 # bfs search algorithm
 def bfs(grid,start,end,screen,clock):
     start_x,start_y=start
-    start_x//=BLOCK_SIZE
-    start_y//=BLOCK_SIZE
-    start = (start_x,start_y)
-    end_x,end_y=end
-    end_x//=BLOCK_SIZE
-    end_y//=BLOCK_SIZE
-    end = (end_x,end_y)
     queue = Queue()
     # Mark starting point as visited (True) on the grid
-    grid[start[1]][start[0]]=True
+    grid[start_y][start_x]=True
     queue.put(start)
     while not queue.empty():
-        clock.tick(FPS)
+        clock.tick(60)
         v = queue.get()
-        draw_square((v[0]*BLOCK_SIZE,v[1]*BLOCK_SIZE),screen,ORANGE)
+        # Draw orange squares to show visited squares by the algorithm
+        # Do not draw on the starting square to show the start point
+        if v!=start:
+            draw_square((v[0],v[1]),screen,ORANGE)
         if v==end:
             return True
         for (x_pos,y_pos) in get_neighbours(grid,v):
@@ -179,5 +170,4 @@ def get_neighbours(grid,point):
 # Run Main function
 if __name__ == '__main__':
     main()
-    # print_grid(init_grid())
     print('------------ Quiting Program ------------')
