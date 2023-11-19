@@ -1,5 +1,5 @@
 import pygame 
-from queue import Queue
+from queue import Queue,LifoQueue
 
 # Constants:
 WIDTH = 600
@@ -74,12 +74,24 @@ def main():
             elif event.type==pygame.MOUSEBUTTONUP:
                 mouse_clicked=False
             elif event.type==pygame.KEYDOWN:
-                # If spacebar was pressed find the shortest path
-                if event.key==pygame.K_SPACE:
+                # Use bfs to search for the end point
+                if event.key==pygame.K_b:
                     if bfs(grid,starting_pos,ending_pos,screen,clock):
-                        print('Ending point was found')
+                        print('Ending point was found using bfs')
                     else:
                         print('Ending point was not found')
+                # Use dfs to find the end point
+                if event.key==pygame.K_d:
+                    if dfs(grid,starting_pos,ending_pos,screen,clock):
+                        print('Ending point was found using dfs')
+                    else:
+                        print('Ending point was not found')
+                # Reset the grid if space was pressed
+                if event.key==pygame.K_SPACE:
+                    grid = init_grid()
+                    starting_point_chosen = False
+                    ending_point_chosen = False
+                    screen.fill(BLACK)
 
         # Draw the grid
         draw_grid(screen)
@@ -132,7 +144,8 @@ def cvt_coord(mouse_pos):
     grid_y//=BLOCK_SIZE
     return (grid_x,grid_y)
 
-# bfs search algorithm
+
+# bfs search algorithm using queue
 def bfs(grid,start,end,screen,clock):
     start_x,start_y=start
     queue = Queue()
@@ -141,7 +154,7 @@ def bfs(grid,start,end,screen,clock):
     queue.put(start)
     while not queue.empty():
         # Limit the speed of the algorithm to see it's steps
-        clock.tick(60)
+        clock.tick(FPS)
         v = queue.get()
         # Draw orange squares to show visited squares by the algorithm
         # Do not draw on the starting square to show the start point
@@ -153,6 +166,28 @@ def bfs(grid,start,end,screen,clock):
             # Mark the square as visited
             grid[y_pos][x_pos]=True
             queue.put((x_pos,y_pos))
+    return False
+
+
+# Dfs search algorithm using stack
+def dfs(grid,start,end,screen,clock):
+    stack = LifoQueue()
+    stack.put(start)
+    while not stack.empty():
+        clock.tick(FPS)
+        v = stack.get()
+        v_x,v_y = v
+        # Draw orange squares to show visited squares by the algorithm
+        # Do not draw on the starting square to show the start point
+        if v!=start:
+            draw_square((v[0],v[1]),screen,ORANGE)
+        if v==end:
+            return True
+        # Mark the v square as visited if not already visited
+        if not grid[v_y][v_x]:
+            grid[v_y][v_x] = True
+            for neighbour in get_neighbours(grid,v):
+                stack.put(neighbour)
     return False
 
 # Get all unexplored and not obstacle neighbours of a given square
@@ -167,7 +202,6 @@ def get_neighbours(grid,point):
                 if grid[neighbour_y][neighbour_x]==False:
                     neighbours.append((neighbour_x,neighbour_y))
     return neighbours
-
 
 # Run Main function
 if __name__ == '__main__':
