@@ -51,28 +51,29 @@ def main():
                 running = False
             # Draw a square in the place mouse was clicked
             elif event.type==pygame.MOUSEBUTTONDOWN:
-                # Check if start,point was chosen else draw a white square
+                # Save the starting point if it wasn't chosen
                 if not starting_point_chosen:
                     starting_pos = grid_pos
                     draw_square(starting_pos,screen,GREEN)
                     starting_point_chosen = True
+                # Save the ending point if it wasn't chosen
                 elif not ending_point_chosen:
                     ending_pos = grid_pos
                     draw_square(ending_pos,screen,RED)
                     ending_point_chosen = True
+                # Draw a white square that indicates an obstacle
                 elif pygame.mouse.get_pos():
                     draw_square(grid_pos,screen,WHITE)
                     mouse_clicked = True
                     grid = update_grid(True,grid_pos,grid)
+            # Draw white squares while the mouse button is pressed down
             elif event.type==pygame.MOUSEMOTION and mouse_clicked==True:
                 draw_square(grid_pos,screen,WHITE)
                 grid = update_grid(True,grid_pos,grid)
+            # Reset the the var that checks if it is a continous click
             elif event.type==pygame.MOUSEBUTTONUP:
                 mouse_clicked=False
             elif event.type==pygame.KEYDOWN:
-                # Print grid if p was pressed
-                if event.key==pygame.K_p:
-                    print_grid(grid)
                 # If spacebar was pressed find the shortest path
                 if event.key==pygame.K_SPACE:
                     if bfs(grid,starting_pos,ending_pos,screen,clock):
@@ -124,7 +125,7 @@ def update_grid(action,pos,grid):
     return grid
 
 # Converts mouse coordinates to grid coordinates 
-# Meaning we will know which square on the grid mouse touches
+# Meaning we will know which square on the grid the mouse touches
 def cvt_coord(mouse_pos):
     grid_x,grid_y=mouse_pos
     grid_x//=BLOCK_SIZE
@@ -139,6 +140,7 @@ def bfs(grid,start,end,screen,clock):
     grid[start_y][start_x]=True
     queue.put(start)
     while not queue.empty():
+        # Limit the speed of the algorithm to see it's steps
         clock.tick(60)
         v = queue.get()
         # Draw orange squares to show visited squares by the algorithm
