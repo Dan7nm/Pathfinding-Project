@@ -1,13 +1,15 @@
 import pygame 
 from queue import Queue,LifoQueue
+import heapq
+import math
 
 # Constants:
 WIDTH = 600
 HEIGHT = 600
 BLOCK_SIZE = 20
 FPS = 60
-GRID_WIDTH = WIDTH//BLOCK_SIZE
-GRID_HEIGHT = HEIGHT//BLOCK_SIZE
+GRID_WIDTH = 30
+GRID_HEIGHT = 30
 
 # Colors
 BLACK = (0,0,0)
@@ -15,6 +17,7 @@ WHITE = (255,255,255)
 GREEN = (0,255,0)
 RED = (255,0,0)
 ORANGE = (255,165,0)
+BLUE = (0,0,255)
 
 # Main function
 def main():
@@ -86,6 +89,12 @@ def main():
                         print('Ending point was found using dfs')
                     else:
                         print('Ending point was not found')
+                # Use dijkstra to find the end point
+                if event.key==pygame.K_j:
+                    if dijkstra(grid,starting_pos,ending_pos,screen,clock):
+                        print('Ending point was found using dijkstra')
+                    else:
+                        print('Ending point was not found')
                 # Reset the grid if space was pressed
                 if event.key==pygame.K_SPACE:
                     grid = init_grid()
@@ -116,17 +125,17 @@ def draw_square(pos,screen,color):
     pygame.draw.rect(screen,color,rect)
     pygame.display.update()
 
-
+# Initilize the whole grid to the given value
 # Initialize the grid for the algorithm
-# we will initialize the grid to false everything
+# we will initialize the grid to false everything by default
 # False means there is no obstacle or the algorithm has no visited there yet
 # Starting point will also be True
-def init_grid():
+def init_grid(value=False):
     grid = []
-    for x in range(0,WIDTH,BLOCK_SIZE):
+    for y in range(GRID_HEIGHT):
         row = []
-        for y in range(0,HEIGHT,BLOCK_SIZE):
-            row.append(False)
+        for x in range(GRID_WIDTH):
+            row.append(value)
         grid.append(row)
     return grid
 
@@ -199,10 +208,56 @@ def get_neighbours(grid,point):
             neighbour_x = point_x+x
             neighbour_y = point_y+y
             if 0<=neighbour_x<GRID_WIDTH and 0<=neighbour_y<GRID_HEIGHT:
-                if grid[neighbour_y][neighbour_x]==False:
+                if grid[neighbour_y][neighbour_x]==False and point!=(x,y):
                     neighbours.append((neighbour_x,neighbour_y))
     return neighbours
 
+# Find the shortest path using Dijkstra using heap
+def dijkstra(grid,start,end,screen,clock):
+    heap = []
+    # We initlize a grid with each square containing a tuple of the prevous square
+    prev = init_grid(0)
+    # We initialize all the the squares to be infinite distance
+    dist = init_grid(math.inf)
+    start_x,start_y = start
+    # We initialize the starting position to zero distance
+    dist[start_y][start_x] = 0
+    # We push the start point into the heap
+    heapq.heappush(heap,(dist[start_y][start_x],(start_x,start_y)))
+    while heap:
+        clock.tick(FPS)
+        # pop the the pos of the quare with min distance
+        u = heapq.heappop(heap)[1]
+        u_x,u_y = u
+        # Draw orange squares to show visited squares by the algorithm
+        # Do not draw on the starting square to show the start point
+        if u==end:
+            print_shortest_path(prev,start,end,screen)
+            return True
+        if u!=start:
+            draw_square(u,screen,ORANGE)
+        for neighbour in get_neighbours(grid,u):
+            neighbour_x,neighbour_y = neighbour
+            alt = dist[u_y][u_x]+1
+            if alt < dist[neighbour_y][neighbour_x]:
+                dist[neighbour_y][neighbour_x] = alt
+                prev[neighbour_y][neighbour_x] = (u_x,u_y)
+                heapq.heappush(heap,(dist[neighbour_y][neighbour_x],(neighbour_x,neighbour_y)))
+    return False
+
+# Prints the shortest path
+def print_shortest_path(prev,start,end,screen):
+    end_x,end_y = end
+    # Set the current square as the previous one to ending 
+    curr = prev[end_y][end_x]
+    # While loop that draws all previous square from the ending square
+    # Thus printing in the end the shortest path from start to end
+    while curr!=start:
+        curr_x,curr_y=curr
+        draw_square(curr,screen,BLUE)
+        curr = prev[curr_y][curr_x]
+
+    
 # Run Main function
 if __name__ == '__main__':
     main()
